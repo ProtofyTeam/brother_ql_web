@@ -56,6 +56,7 @@ def get_label_context(request):
     font_family = d.get('font_family').rpartition('(')[0].strip()
     font_style  = d.get('font_family').rpartition('(')[2].rstrip(')')
     context = {
+      'img':           d.get('img', None),
       'text':          d.get('text', None),
       'font_size': int(d.get('font_size', 100)),
       'font_family':   font_family,
@@ -187,6 +188,68 @@ def print_text():
 
     if context['text'] is None:
         return_dict['error'] = 'Please provide the text for the label'
+        return return_dict
+
+    # im = create_label_im(**context)
+    # if DEBUG: im.save('sample-out.png')
+    msg = base64.b64decode(context['img'])
+    buf = io.BytesIO(msg)
+    im = Image.open(buf)
+
+    if context['kind'] == ENDLESS_LABEL:
+        rotate = 0 if context['orientation'] == 'standard' else 90
+    elif context['kind'] in (ROUND_DIE_CUT_LABEL, DIE_CUT_LABEL):
+        rotate = 'auto'
+
+    qlr = BrotherQLRaster(CONFIG['PRINTER']['MODEL'])
+    red = False
+    if 'red' in context['label_size']:
+        red = True
+    create_label(qlr, im, context['label_size'], red=red, threshold=context['threshold'], cut=True, rotate=rotate)
+
+    if not DEBUG:
+        try:
+            be = BACKEND_CLASS(CONFIG['PRINTER']['PRINTER'])
+            be.write(qlr.data)
+            be.dispose()
+            del be
+        except Exception as e:
+            return_dict['message'] = str(e)
+            logger.warning('Exception happened: %s', e)
+            return return_dict
+
+    return_dict['success'] = True
+    if DEBUG: return_dict['data'] = str(qlr.data)
+    return return_dict
+
+@get('/api/version')
+def print_img():
+    return_dict['success'] = True
+    retur_dict['version'] = '0.1'
+    return return_dict
+
+@post('/api/print/img')
+@get('/api/print/img')
+def print_img():
+    """
+    API to print a image
+
+    returns: JSON
+
+    Ideas for additional URL parameters:
+    - alignment
+    """
+
+    return_dict = {'success': False}
+
+    try:
+        context = get_label_context(request)
+    except LookupError as e:
+        return_dict['error'] = e.msg
+        return return_dict
+
+    if context['img'] is None:
+        return_dict['error'] = 'Please provide the img for the label'
         return return_dict
 
     im = create_label_im(**context)
