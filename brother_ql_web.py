@@ -222,6 +222,7 @@ def print_text():
     if DEBUG: return_dict['data'] = str(qlr.data)
     return return_dict
 
+@post('/api/version')
 @get('/api/version')
 def version():
     return_dict['success'] = True
