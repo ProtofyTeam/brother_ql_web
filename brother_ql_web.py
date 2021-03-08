@@ -223,7 +223,7 @@ def print_text():
     return return_dict
 
 @get('/api/version')
-def print_img():
+def version():
     return_dict['success'] = True
     retur_dict['version'] = '0.1'
     return return_dict
