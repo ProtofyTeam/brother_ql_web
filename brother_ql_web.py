@@ -8,6 +8,7 @@ This is a web service to print labels on Brother QL label printers.
 import sys, logging, random, json, argparse
 from io import BytesIO
 
+from bottle import BaseRequest
 from bottle import run, route, get, post, response, request, jinja2_view as view, static_file, redirect
 from PIL import Image, ImageDraw, ImageFont
 
@@ -29,6 +30,7 @@ except FileNotFoundError as e:
     with open('config.example.json', encoding='utf-8') as fh:
         CONFIG = json.load(fh)
 
+BaseRequest.MEMFILE_MAX = 1024 * 1024
 
 @route('/')
 def index():
@@ -166,6 +168,15 @@ def image_to_png_bytes(im):
     image_buffer.seek(0)
     return image_buffer.read()
 
+@post('/api/version')
+@get('/api/version')
+def version():
+    return_dict = {'success': False}
+    return_dict['success'] = True
+    return_dict['version'] = '0.1'
+    response.set_header('Content-type', 'text/plain')
+    return return_dict
+
 @post('/api/print/text')
 @get('/api/print/text')
 def print_text():
@@ -190,11 +201,8 @@ def print_text():
         return_dict['error'] = 'Please provide the text for the label'
         return return_dict
 
-    # im = create_label_im(**context)
-    # if DEBUG: im.save('sample-out.png')
-    msg = base64.b64decode(context['img'])
-    buf = io.BytesIO(msg)
-    im = Image.open(buf)
+    im = create_label_im(**context)
+    if DEBUG: im.save('sample-out.png')
 
     if context['kind'] == ENDLESS_LABEL:
         rotate = 0 if context['orientation'] == 'standard' else 90
@@ -222,13 +230,6 @@ def print_text():
     if DEBUG: return_dict['data'] = str(qlr.data)
     return return_dict
 
-@post('/api/version')
-@get('/api/version')
-def version():
-    return_dict['success'] = True
-    retur_dict['version'] = '0.1'
-    return return_dict
-
 @post('/api/print/img')
 @get('/api/print/img')
 def print_img():
@@ -253,7 +254,13 @@ def print_img():
         return_dict['error'] = 'Please provide the img for the label'
         return return_dict
 
-    im = create_label_im(**context)
+    # im = create_label_im(**context)
+    import base64
+    import io
+    msg = base64.b64decode(context['img'])
+    buf = io.BytesIO(msg)
+    im = Image.open(buf)
+    
     if DEBUG: im.save('sample-out.png')
 
     if context['kind'] == ENDLESS_LABEL:

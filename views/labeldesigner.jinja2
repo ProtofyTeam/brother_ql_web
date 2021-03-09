@@ -111,6 +111,12 @@
         <textarea rows="7" id="labelText" class="form-control" onChange="preview()" onInput="preview()"></textarea>
       </fieldset>
     </div>
+     <div class="col-md-4">
+      <fieldset class="form-group">
+        <label for="labelTextImg">Image64 Text:</label>
+        <textarea rows="7" id="labelTextImg" class="form-control"></textarea>
+      </fieldset>
+    </div>
     <div class="col-md-4">
       <fieldset class="form-group">
         <label for="previewImg">Label Preview:</label><br />
@@ -119,7 +125,12 @@
         <button id="printButton" type="button" class="btn btn-primary btn-block btn-lg" onClick="print()">
           <span class="glyphicon glyphicon-print" aria-hidden="true"></span> Print
         </button>
+         <button id="printImgButton" type="button" class="btn btn-primary btn-block btn-lg" onClick="printImg()">
+          <span class="glyphicon glyphicon-print" aria-hidden="true"></span> PrintImg
+        </button>
       </fieldset>
+      
+
       <div class="panel panel-default">
         <div class="panel-heading">
           <h3 class="panel-title"><span class="glyphicon glyphicon-console" aria-hidden="true" style="margin-right: 0.3em"></span> Status</h3>
@@ -139,7 +150,10 @@ function formData() {
   //var text = $('#labelText').val().replace(/\n/g, "%0A");
   var text = $('#labelText').val();
   if (text == '') text = ' ';
+  var img = $('#labelTextImg').val();
+  if (img == '') img = ' ';
   return {
+    img:         img,
     text:        text,
     font_family: $('#fontFamily option:selected').text(),
     font_size:   $('#fontSize').val(),
@@ -183,6 +197,7 @@ function setStatus(data) {
   else
     $('#statusPanel').html('<div id="statusBox" class="alert alert-warning" role="alert"><i class="glyphicon glyphicon-alert"></i><span>Printing was unsuccessful:<br />'+data['message']+'</span></div>');
   $('#printButton').prop('disabled', false);
+  $('#printImgButton').prop('disabled', false);
 }
 
 function print() {
@@ -193,6 +208,19 @@ function print() {
     dataType: 'json',
     data:     formData(),
     url:      '/api/print/text',
+    success:  setStatus,
+    error:    setStatus
+  });
+}
+
+function printImg() {
+  $('#printImgButton').prop('disabled', true);
+  $('#statusPanel').html('<div id="statusBox" class="alert alert-info" role="alert"><i class="glyphicon glyphicon-hourglass"></i><span>Processing print request...</span></div>');
+  $.ajax({
+    type:     'POST',
+    dataType: 'json',
+    data:     formData(),
+    url:      '/api/print/img',
     success:  setStatus,
     error:    setStatus
   });
